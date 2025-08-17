@@ -60,7 +60,7 @@ def crawl():
 
             # Upload raw text to S3
             try:
-                s3.put_object(Bucket=BUCKET, Key=key, Body=text.encode("utf-8"))
+                s3.put_object(Bucket=BUCKET, Key=key, Body=text_body.encode("utf-8"))
                 logger.info(f"Uploaded to s3://{BUCKET}/{key}")
             except Exception as e:
                 logger.error(f"S3 upload failed for {key}: {e}")
@@ -78,7 +78,7 @@ def crawl():
                         "storage_path": key,
                         "status": resp.status_code,
                         "ctype": resp.headers.get("Content-Type", ""),
-                        "length": len(text),
+                        "length": len(text_body),
                     },
                 )
                 new_id = result.scalar_one()
@@ -88,7 +88,7 @@ def crawl():
                 logger.error(f"DB insert failed for {domain}: {e}")
                 db.rollback()
             # Politeness delay
-time.sleep(1)
+            time.sleep(1)
 
 if __name__ == "__main__":
     crawl()
