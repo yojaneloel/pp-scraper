@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pps
+      POSTGRES_PASSWORD: pps_pass
+      POSTGRES_DB: pps_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - ppnet
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - ppnet
+
+  crawler:
+    build: ./crawler
+    environment:
+      AWS_REGION: ${AWS_REGION}
+      S3_BUCKET: ${S3_BUCKET}
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - postgres
+    networks:
+      - ppnet
+    command: ["python", "-m", "crawler.main"]
+
+  diff:
+    build: ./diff
+    environment:
+      AWS_REGION: ${AWS_REGION}
+      S3_BUCKET: ${S3_BUCKET}
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - postgres
+    networks:
+      - ppnet
+    command: ["python", "-m", "diff.main"]
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - postgres
+    networks:
+      - ppnet
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+networks:
+  ppnet:
+
+volumes:
+  pgdata:
